@@ -22,10 +22,7 @@ import java.math.BigDecimal;
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow;
 import org.apache.spark.sql.types.*;
-import org.apache.spark.sql.vectorized.ColumnarArray;
-import org.apache.spark.sql.vectorized.ColumnarBatch;
-import org.apache.spark.sql.vectorized.ColumnarMap;
-import org.apache.spark.sql.vectorized.ColumnarRow;
+import org.apache.spark.sql.vectorized.*;
 import org.apache.spark.unsafe.types.CalendarInterval;
 import org.apache.spark.unsafe.types.UTF8String;
 

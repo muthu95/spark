@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.expressions.SpecificInternalRow
 import org.apache.spark.sql.execution.columnar.ColumnAccessor
 import org.apache.spark.sql.execution.columnar.compression.ColumnBuilderHelper
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.vectorized.ColumnarArray
+import org.apache.spark.sql.vectorized.{ColumnarArray, WritableColumnVector}
 import org.apache.spark.unsafe.types.UTF8String
 
 class ColumnVectorSuite extends SparkFunSuite with BeforeAndAfterEach {

@@ -18,12 +18,12 @@
 package org.apache.spark.sql.execution.datasources.orc
 
 import org.apache.orc.TypeDescription
-
 import org.apache.spark.sql.QueryTest
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.execution.vectorized.{OnHeapColumnVector, WritableColumnVector}
+import org.apache.spark.sql.execution.vectorized.OnHeapColumnVector
 import org.apache.spark.sql.test.SharedSparkSession
 import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.vectorized.WritableColumnVector
 import org.apache.spark.unsafe.types.UTF8String.fromString
 
 class OrcColumnarBatchReaderSuite extends QueryTest with SharedSparkSession {

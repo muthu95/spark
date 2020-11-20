@@ -22,6 +22,7 @@ import java.nio.ByteOrder;
 import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.spark.sql.types.*;
+import org.apache.spark.sql.vectorized.WritableColumnVector;
 import org.apache.spark.unsafe.Platform;
 import org.apache.spark.unsafe.types.UTF8String;
 

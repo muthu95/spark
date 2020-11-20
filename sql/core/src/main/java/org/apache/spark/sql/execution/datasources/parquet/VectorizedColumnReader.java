@@ -38,7 +38,7 @@ import org.apache.spark.sql.catalyst.util.DateTimeUtils;
 import org.apache.spark.sql.catalyst.util.RebaseDateTime;
 import org.apache.spark.sql.execution.datasources.DataSourceUtils;
 import org.apache.spark.sql.execution.datasources.SchemaColumnConvertNotSupportedException;
-import org.apache.spark.sql.execution.vectorized.WritableColumnVector;
+import org.apache.spark.sql.vectorized.WritableColumnVector;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.DecimalType;
 

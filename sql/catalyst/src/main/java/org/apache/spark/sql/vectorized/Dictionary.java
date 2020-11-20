@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.sql.execution.vectorized;
+package org.apache.spark.sql.vectorized;
 
 /**
  * The interface for dictionary in ColumnVector to decode dictionary encoded values.

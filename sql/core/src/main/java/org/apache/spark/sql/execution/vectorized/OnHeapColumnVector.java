@@ -21,6 +21,7 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import org.apache.spark.sql.types.*;
+import org.apache.spark.sql.vectorized.WritableColumnVector;
 import org.apache.spark.unsafe.Platform;
 import org.apache.spark.unsafe.types.UTF8String;
 

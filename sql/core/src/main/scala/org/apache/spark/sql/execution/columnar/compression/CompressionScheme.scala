@@ -21,8 +21,8 @@ import java.nio.{ByteBuffer, ByteOrder}
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.columnar.{ColumnType, NativeColumnType}
-import org.apache.spark.sql.execution.vectorized.WritableColumnVector
 import org.apache.spark.sql.types.AtomicType
+import org.apache.spark.sql.vectorized.WritableColumnVector
 
 private[columnar] trait Encoder[T <: AtomicType] {
   def gatherCompressibilityStats(row: InternalRow, ordinal: Int): Unit = {}

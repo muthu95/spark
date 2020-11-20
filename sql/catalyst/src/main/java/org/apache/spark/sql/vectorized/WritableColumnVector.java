@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.spark.sql.execution.vectorized;
+package org.apache.spark.sql.vectorized;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -23,9 +23,6 @@ import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.spark.sql.internal.SQLConf;
 import org.apache.spark.sql.types.*;
-import org.apache.spark.sql.vectorized.ColumnVector;
-import org.apache.spark.sql.vectorized.ColumnarArray;
-import org.apache.spark.sql.vectorized.ColumnarMap;
 import org.apache.spark.unsafe.array.ByteArrayMethods;
 import org.apache.spark.unsafe.types.CalendarInterval;
 import org.apache.spark.unsafe.types.UTF8String;
@@ -680,7 +677,7 @@ public abstract class WritableColumnVector extends ColumnVector {
   /**
    * Maximum number of rows that can be stored in this column.
    */
-  protected int capacity;
+  public int capacity;
 
   /**
    * Upper limit for the maximum capacity for this column.

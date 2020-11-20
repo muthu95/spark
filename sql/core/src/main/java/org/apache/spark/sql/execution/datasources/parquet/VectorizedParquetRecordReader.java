@@ -20,18 +20,22 @@ package org.apache.spark.sql.execution.datasources.parquet;
 import java.io.IOException;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.page.PageReadStore;
+import org.apache.parquet.io.InvalidRecordException;
 import org.apache.parquet.schema.Type;
 
 import org.apache.spark.memory.MemoryMode;
 import org.apache.spark.sql.catalyst.InternalRow;
+import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.execution.vectorized.ColumnVectorUtils;
-import org.apache.spark.sql.execution.vectorized.WritableColumnVector;
+import org.apache.spark.sql.vectorized.WritableColumnVector;
 import org.apache.spark.sql.execution.vectorized.OffHeapColumnVector;
 import org.apache.spark.sql.execution.vectorized.OnHeapColumnVector;
 import org.apache.spark.sql.vectorized.ColumnarBatch;
@@ -266,6 +270,36 @@ public class VectorizedParquetRecordReader extends SpecificParquetRecordReaderBa
     returnColumnarBatch = true;
   }
 
+  public void corruptRows() {
+    Iterator<InternalRow> iter = columnarBatch.rowIterator();
+    int rowNum = 0;
+    while(iter.hasNext()) {
+      InternalRow currRow = iter.next();
+      String pKey = currRow.getString(0); //TODO remove pk type & idx hardcoding
+      if(FileScanRDD.dict().containsKey(pKey)) {
+        //This row has been updated
+        Map<String, Object> changes =
+                (Map<String, Object>) FileScanRDD.dict().get(pKey);
+        for(String colName : changes.keySet()) {
+          try {
+            int colIdx = requestedSchema.getFieldIndex(colName);
+            Object O = changes.get(colName);
+            if(O instanceof String) {
+              columnVectors[colIdx].putByteArray(rowNum,
+                      ((String) O).getBytes());
+            } else if(O instanceof Integer) {
+              columnVectors[colIdx].putInt(rowNum, (Integer) O);
+            } else {
+              System.out.println("INVALID DTYPE");
+            }
+          } catch (InvalidRecordException e) {
+          }
+        }
+      }
+      rowNum++;
+    }
+  }
+
   /**
    * Advances to the next batch of rows. Returns false if there are no more.
    */
@@ -286,6 +320,7 @@ public class VectorizedParquetRecordReader extends SpecificParquetRecordReaderBa
     columnarBatch.setNumRows(num);
     numBatched = num;
     batchIdx = 0;
+    corruptRows();
     return true;
   }
 

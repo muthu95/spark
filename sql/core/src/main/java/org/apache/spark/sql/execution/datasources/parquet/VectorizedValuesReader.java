@@ -17,7 +17,7 @@
 
 package org.apache.spark.sql.execution.datasources.parquet;
 
-import org.apache.spark.sql.execution.vectorized.WritableColumnVector;
+import org.apache.spark.sql.vectorized.WritableColumnVector;
 
 import org.apache.parquet.io.api.Binary;
 

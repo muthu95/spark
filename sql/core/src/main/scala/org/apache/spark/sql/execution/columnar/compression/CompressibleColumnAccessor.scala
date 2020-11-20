@@ -19,8 +19,8 @@ package org.apache.spark.sql.execution.columnar.compression
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.columnar.{ColumnAccessor, NativeColumnAccessor}
-import org.apache.spark.sql.execution.vectorized.WritableColumnVector
 import org.apache.spark.sql.types.AtomicType
+import org.apache.spark.sql.vectorized.WritableColumnVector
 
 private[columnar] trait CompressibleColumnAccessor[T <: AtomicType] extends ColumnAccessor {
   this: NativeColumnAccessor[T] =>

@@ -17,7 +17,7 @@
 
 package org.apache.spark.sql.execution.columnar;
 
-import org.apache.spark.sql.execution.vectorized.Dictionary;
+import org.apache.spark.sql.vectorized.Dictionary;
 
 public final class ColumnDictionary implements Dictionary {
   private int[] intDictionary;

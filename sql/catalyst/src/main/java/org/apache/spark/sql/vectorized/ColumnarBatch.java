@@ -284,7 +284,14 @@ class ColumnarBatchRow extends InternalRow {
   }
 
   @Override
-  public void update(int ordinal, Object value) { throw new UnsupportedOperationException(); }
+  public void update(int ordinal, Object value) {
+    if(columns instanceof WritableColumnVector[]) {
+      WritableColumnVector[] mutableColumns = (WritableColumnVector[]) columns;
+
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
 
   @Override
   public void setNullAt(int ordinal) { throw new UnsupportedOperationException(); }

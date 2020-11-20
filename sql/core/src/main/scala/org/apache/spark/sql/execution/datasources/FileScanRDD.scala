@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.datasources
 
 import java.io.{FileNotFoundException, IOException}
 
+import collection.JavaConverters._
 import org.apache.parquet.io.ParquetDecodingException
 
 import org.apache.spark.{Partition => RDDPartition, SparkUpgradeException, TaskContext}
@@ -62,6 +63,8 @@ class FileScanRDD(
 
   private val ignoreCorruptFiles = sparkSession.sessionState.conf.ignoreCorruptFiles
   private val ignoreMissingFiles = sparkSession.sessionState.conf.ignoreMissingFiles
+
+  private val muthuNagappan = "My name is Muthu"
 
   override def compute(split: RDDPartition, context: TaskContext): Iterator[InternalRow] = {
     val iterator = new Iterator[Object] with AutoCloseable {
@@ -212,4 +215,12 @@ class FileScanRDD(
   override protected def getPreferredLocations(split: RDDPartition): Seq[String] = {
     split.asInstanceOf[FilePartition].preferredLocations()
   }
+}
+
+object FileScanRDD {
+  val dict = Map(
+    "Robert " -> Map("lastname" -> "ABC", "salary" -> 1234).asJava,
+    "Michael " -> Map("middlename" -> "Jack").asJava,
+    "Jen" -> Map("salary" -> 100, "dob" -> "14195").asJava
+  ).asJava
 }

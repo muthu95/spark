@@ -29,7 +29,7 @@ import org.apache.parquet.column.values.bitpacking.Packer;
 import org.apache.parquet.io.ParquetDecodingException;
 import org.apache.parquet.io.api.Binary;
 
-import org.apache.spark.sql.execution.vectorized.WritableColumnVector;
+import org.apache.spark.sql.vectorized.WritableColumnVector;
 
 /**
  * A values reader for Parquet's run-length encoded data. This is based off of the version in

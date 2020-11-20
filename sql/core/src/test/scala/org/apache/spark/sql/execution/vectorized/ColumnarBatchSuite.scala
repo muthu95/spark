@@ -24,9 +24,7 @@ import java.nio.charset.StandardCharsets
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.Random
-
 import org.apache.arrow.vector.IntVector
-
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql.{RandomDataGenerator, Row}
@@ -36,7 +34,7 @@ import org.apache.spark.sql.catalyst.util.{ArrayBasedMapBuilder, DateTimeUtils, 
 import org.apache.spark.sql.execution.RowToColumnConverter
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.util.ArrowUtils
-import org.apache.spark.sql.vectorized.{ArrowColumnVector, ColumnarBatch}
+import org.apache.spark.sql.vectorized.{ArrowColumnVector, ColumnarBatch, WritableColumnVector}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
