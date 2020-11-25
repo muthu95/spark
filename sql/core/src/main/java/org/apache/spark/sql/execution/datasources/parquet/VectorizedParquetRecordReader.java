@@ -35,6 +35,8 @@ import org.apache.spark.memory.MemoryMode;
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.execution.vectorized.ColumnVectorUtils;
+import org.apache.spark.sql.types.DataType;
+import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.vectorized.WritableColumnVector;
 import org.apache.spark.sql.execution.vectorized.OffHeapColumnVector;
 import org.apache.spark.sql.execution.vectorized.OnHeapColumnVector;
@@ -264,39 +266,88 @@ public class VectorizedParquetRecordReader extends SpecificParquetRecordReaderBa
   }
 
   /**
-   * Can be called before any rows are returned to enable returning columnar batches directly.
+   * Can be called before any rows are returned to enable returning columnar
+   * batches directly.
    */
   public void enableReturningBatches() {
     returnColumnarBatch = true;
   }
 
-  public void corruptRows() {
-    Iterator<InternalRow> iter = columnarBatch.rowIterator();
-    int rowNum = 0;
-    while(iter.hasNext()) {
-      InternalRow currRow = iter.next();
-      String pKey = currRow.getString(0); //TODO remove pk type & idx hardcoding
-      if(FileScanRDD.dict().containsKey(pKey)) {
-        //This row has been updated
-        Map<String, Object> changes =
-                (Map<String, Object>) FileScanRDD.dict().get(pKey);
-        for(String colName : changes.keySet()) {
-          try {
-            int colIdx = requestedSchema.getFieldIndex(colName);
-            Object O = changes.get(colName);
-            if(O instanceof String) {
-              columnVectors[colIdx].putByteArray(rowNum,
-                      ((String) O).getBytes());
-            } else if(O instanceof Integer) {
-              columnVectors[colIdx].putInt(rowNum, (Integer) O);
-            } else {
-              System.out.println("INVALID DTYPE");
-            }
-          } catch (InvalidRecordException e) {
-          }
+  public Object getPrimaryKeyValue(InternalRow currRow,
+                                   DataType pKeyDataType,
+                                   int pKeyOrdinal) {
+    Object pKey = null;
+    if (pKeyDataType == DataTypes.BooleanType) {
+      pKey = currRow.getBoolean(pKeyOrdinal);
+    } else if (pKeyDataType == DataTypes.ByteType) {
+      pKey = currRow.getByte(pKeyOrdinal);
+    } else if (pKeyDataType == DataTypes.ShortType) {
+      pKey = currRow.getShort(pKeyOrdinal);
+    } else if (pKeyDataType == DataTypes.IntegerType) {
+      pKey = currRow.getInt(pKeyOrdinal);
+    } else if (pKeyDataType == DataTypes.LongType) {
+      pKey = currRow.getLong(pKeyOrdinal);
+    } else if (pKeyDataType == DataTypes.FloatType) {
+      pKey = currRow.getFloat(pKeyOrdinal);
+    } else if (pKeyDataType == DataTypes.DoubleType) {
+      pKey = currRow.getDouble(pKeyOrdinal);
+    } else if (pKeyDataType == DataTypes.StringType) {
+      pKey = currRow.getUTF8String(pKeyOrdinal).toString();
+    } else {
+      System.out.println("Muthu: INVALID DTYPE");
+    }
+    return pKey;
+  }
+
+  public void mergeRow(Map<String, Object> changes, int rowIdx) {
+    if (changes == null) {
+      return;
+    }
+    for (String colName : changes.keySet()) {
+      try {
+        int colIdx = requestedSchema.getFieldIndex(colName);
+        DataType colType = columnVectors[colIdx].dataType();
+        Object newObject = changes.get(colName);
+        if (colType == DataTypes.BooleanType) {
+          columnVectors[colIdx].putBoolean(rowIdx, (Boolean) newObject);
+        } else if (colType == DataTypes.ByteType) {
+          columnVectors[colIdx].putByte(rowIdx, (Byte) newObject);
+        } else if (colType == DataTypes.ShortType) {
+          columnVectors[colIdx].putShort(rowIdx, (Short) newObject);
+        } else if (colType == DataTypes.IntegerType) {
+          columnVectors[colIdx].putInt(rowIdx, (Integer) newObject);
+        } else if (colType == DataTypes.LongType) {
+          columnVectors[colIdx].putLong(rowIdx, (Long) newObject);
+        } else if (colType == DataTypes.FloatType) {
+          columnVectors[colIdx].putFloat(rowIdx, (Float) newObject);
+        } else if (colType == DataTypes.DoubleType) {
+          columnVectors[colIdx].putDouble(rowIdx, (Double) newObject);
+        } else if (colType == DataTypes.StringType) {
+          columnVectors[colIdx].putByteArray(rowIdx,
+                  ((String) newObject).getBytes());
+        } else {
+          System.out.println("Muthu: INVALID DTYPE");
         }
+      } catch (InvalidRecordException e) {
+        System.out.println("Muthu: COLUMN TO MERGE NOT FOUND");
       }
-      rowNum++;
+    }
+  }
+
+  public void mergeBatch() {
+    try {
+      int pKeyOrdinal = requestedSchema.getFieldIndex(FileScanRDD.pKeyName());
+      Iterator<InternalRow> iter = columnarBatch.rowIterator();
+      int rowIdx = 0;
+      while (iter.hasNext()) {
+        InternalRow currRow = iter.next();
+        DataType pKeyDataType = columnVectors[pKeyOrdinal].dataType();
+        Object pKey = getPrimaryKeyValue(currRow, pKeyDataType, pKeyOrdinal);
+        mergeRow(FileScanRDD.dict().get(pKey), rowIdx);
+        rowIdx++;
+      }
+    } catch (InvalidRecordException e) {
+      System.out.println("Muthu: PRIMARY KEY COLUMN NOT FOUND");
     }
   }
 
@@ -320,7 +371,7 @@ public class VectorizedParquetRecordReader extends SpecificParquetRecordReaderBa
     columnarBatch.setNumRows(num);
     numBatched = num;
     batchIdx = 0;
-    corruptRows();
+    mergeBatch();
     return true;
   }
 

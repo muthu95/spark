@@ -18,11 +18,10 @@
 package org.apache.spark.sql.execution.datasources
 
 import java.io.Closeable
-import java.nio.charset.StandardCharsets
 
 import org.apache.hadoop.mapreduce.RecordReader
+
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.vectorized.ColumnarBatch
 
 /**
  * An adaptor from a Hadoop [[RecordReader]] to an [[Iterator]] over the values returned.
@@ -54,31 +53,7 @@ class RecordReaderIterator[T](
       throw new java.util.NoSuchElementException("End of stream")
     }
     havePair = false
-    // rowReader.getCurrentValue
-    val value = rowReader.getCurrentValue
-    value match {
-      case columnarBatch: ColumnarBatch => updateColumnBatch(columnarBatch)
-      case internalRow: InternalRow => updateInternalRow(internalRow)
-    }
-  }
-
-  def updateColumnBatch(columnarBatch: ColumnarBatch): T = {
-    /* val iter = columnarBatch.rowIterator()
-    while(iter.hasNext()) {
-      iter.next().asInstanceOf[ColumnarBatchRow]
-      // mergeRow(iter.next())
-    } */
-    columnarBatch.asInstanceOf[T]
-  }
-
-  def updateInternalRow(internalRow: InternalRow): T = {
-    mergeRow(internalRow)
-    internalRow.asInstanceOf[T]
-  }
-
-  def mergeRow(internalRow: InternalRow): Unit = {
-    // internalRow.update(0, "MUTHU".getBytes(StandardCharsets.UTF_8))
-    print("Testing")
+    rowReader.getCurrentValue
   }
 
   override def close(): Unit = {

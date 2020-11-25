@@ -218,9 +218,25 @@ class FileScanRDD(
 }
 
 object FileScanRDD {
+  val pKeyName = "firstname"
+
+  /* val dict = Map(
+    1045.asInstanceOf[Any] ->
+      Map("FloatColumn" -> 1.27F.asInstanceOf[Any],
+          "DoubleColumn" -> 5.79.asInstanceOf[Any],
+          "LongColumn" -> 5764L.asInstanceOf[Any],
+          "BoolColumn" -> false.asInstanceOf[Any],
+          "StringColumn" -> "Naga".asInstanceOf[Any]).asJava
+  ).asJava */
+
   val dict = Map(
-    "Robert " -> Map("lastname" -> "ABC", "salary" -> 1234).asJava,
-    "Michael " -> Map("middlename" -> "Jack").asJava,
-    "Jen" -> Map("salary" -> 100, "dob" -> "14195").asJava
+    "Robert ".asInstanceOf[Any] ->
+      Map("lastname" -> "ABC".asInstanceOf[Any],
+        "salary" -> 1234.asInstanceOf[Any]).asJava,
+    "Michael ".asInstanceOf[Any] ->
+      Map("middlename" -> "Jack".asInstanceOf[Any]).asJava,
+    "Jen".asInstanceOf[Any] ->
+      Map("salary" -> 100.asInstanceOf[Any],
+        "dob" -> "14195".asInstanceOf[Any]).asJava
   ).asJava
 }
