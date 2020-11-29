@@ -43,6 +43,7 @@ import org.apache.spark.sql.execution.vectorized.OnHeapColumnVector;
 import org.apache.spark.sql.vectorized.ColumnarBatch;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.apache.spark.unsafe.types.UTF8String;
 
 /**
  * A specialized RecordReader that reads into InternalRows or ColumnarBatches directly using the
@@ -109,18 +110,23 @@ public class VectorizedParquetRecordReader extends SpecificParquetRecordReaderBa
    * batched decoding. It is not valid to interleave calls to the batched interface with the row
    * by row RecordReader APIs.
    * This is only enabled with additional flags for development. This is still a work in progress
-   * and currently unsupported cases will fail with potentially difficult to diagnose errors.
+   * and currently unsupported cases will fail with potentially difficult to
+   * diagnose errors.
    * This should be only turned on for development to work on this feature.
    *
-   * When this is set, the code will branch early on in the RecordReader APIs. There is no shared
+   * When this is set, the code will branch early on in the RecordReader APIs
+   * . There is no shared
    * code between the path that uses the MR decoders and the vectorized ones.
    *
    * TODOs:
-   *  - Implement v2 page formats (just make sure we create the correct decoders).
+   *  - Implement v2 page formats (just make sure we create the correct
+   *  decoders).
    */
   private ColumnarBatch columnarBatch;
+    private ColumnarBatch columnarBatch2;
 
-  private WritableColumnVector[] columnVectors;
+    private WritableColumnVector[] columnVectors;
+    private WritableColumnVector[] columnVectors2;
 
   /**
    * If true, this class returns batches instead of rows.
@@ -195,8 +201,10 @@ public class VectorizedParquetRecordReader extends SpecificParquetRecordReaderBa
 
   @Override
   public Object getCurrentValue() {
-    if (returnColumnarBatch) return columnarBatch;
-    return columnarBatch.getRow(batchIdx - 1);
+      if (returnColumnarBatch) {
+          return columnarBatch2;
+      }
+      return columnarBatch2.getRow(batchIdx - 1);
   }
 
   @Override
@@ -225,24 +233,36 @@ public class VectorizedParquetRecordReader extends SpecificParquetRecordReaderBa
     }
 
     if (memMode == MemoryMode.OFF_HEAP) {
-      columnVectors = OffHeapColumnVector.allocateColumns(capacity, batchSchema);
+        columnVectors =
+                OffHeapColumnVector.allocateColumns(capacity, batchSchema);
+        columnVectors2 = OffHeapColumnVector.allocateColumns(capacity,
+                batchSchema);
     } else {
-      columnVectors = OnHeapColumnVector.allocateColumns(capacity, batchSchema);
+        columnVectors =
+                OnHeapColumnVector.allocateColumns(capacity, batchSchema);
+        columnVectors2 = OnHeapColumnVector.allocateColumns(capacity,
+                batchSchema);
     }
-    columnarBatch = new ColumnarBatch(columnVectors);
+      columnarBatch = new ColumnarBatch(columnVectors);
+      columnarBatch2 = new ColumnarBatch(columnVectors2);
     if (partitionColumns != null) {
       int partitionIdx = sparkSchema.fields().length;
       for (int i = 0; i < partitionColumns.fields().length; i++) {
-        ColumnVectorUtils.populate(columnVectors[i + partitionIdx], partitionValues, i);
-        columnVectors[i + partitionIdx].setIsConstant();
+          ColumnVectorUtils.populate(columnVectors[i +
+                  partitionIdx], partitionValues, i);
+          columnVectors2[i + partitionIdx] = columnVectors[i + partitionIdx];
+          columnVectors[i + partitionIdx].setIsConstant();
+          columnVectors2[i + partitionIdx].setIsConstant();
       }
     }
 
     // Initialize missing columns with nulls.
     for (int i = 0; i < missingColumns.length; i++) {
       if (missingColumns[i]) {
-        columnVectors[i].putNulls(0, capacity);
-        columnVectors[i].setIsConstant();
+          columnVectors[i].putNulls(0, capacity);
+          columnVectors2[i].putNulls(0, capacity);
+          columnVectors[i].setIsConstant();
+          columnVectors2[i].setIsConstant();
       }
     }
   }
@@ -299,7 +319,7 @@ public class VectorizedParquetRecordReader extends SpecificParquetRecordReaderBa
     return pKey;
   }
 
-  public void mergeRow(Map<String, Object> changes, int rowIdx) {
+  /* public void mergeRow(Map<String, Object> changes, int rowIdx) {
     if (changes == null) {
       return;
     }
@@ -332,47 +352,93 @@ public class VectorizedParquetRecordReader extends SpecificParquetRecordReaderBa
         System.out.println("Muthu: COLUMN TO MERGE NOT FOUND");
       }
     }
-  }
+  } */
 
-  public void mergeBatch() {
-    try {
-      int pKeyOrdinal = requestedSchema.getFieldIndex(FileScanRDD.pKeyName());
-      Iterator<InternalRow> iter = columnarBatch.rowIterator();
-      int rowIdx = 0;
-      while (iter.hasNext()) {
-        InternalRow currRow = iter.next();
-        DataType pKeyDataType = columnVectors[pKeyOrdinal].dataType();
-        Object pKey = getPrimaryKeyValue(currRow, pKeyDataType, pKeyOrdinal);
-        mergeRow(FileScanRDD.dict().get(pKey), rowIdx);
-        rowIdx++;
-      }
-    } catch (InvalidRecordException e) {
+    public void includeRow(InternalRow row) {
+        for (int fieldIdx = 0; fieldIdx < row.numFields(); fieldIdx++) {
+            DataType t = columnVectors2[fieldIdx].dataType();
+            WritableColumnVector col = columnVectors2[fieldIdx];
+            if (row.isNullAt(fieldIdx)) {
+                col.appendNull();
+            } else {
+                if (t == DataTypes.BooleanType) {
+                    col.appendBoolean(row.getBoolean(fieldIdx));
+                } else if (t == DataTypes.ByteType) {
+                    col.appendByte(row.getByte(fieldIdx));
+                } else if (t == DataTypes.ShortType) {
+                    col.appendShort(row.getShort(fieldIdx));
+                } else if (t == DataTypes.IntegerType) {
+                    col.appendInt(row.getInt(fieldIdx));
+                } else if (t == DataTypes.LongType) {
+                    col.appendLong(row.getLong(fieldIdx));
+                } else if (t == DataTypes.FloatType) {
+                    col.appendFloat(row.getFloat(fieldIdx));
+                } else if (t == DataTypes.DoubleType) {
+                    col.appendDouble(row.getDouble(fieldIdx));
+                } else if (t == DataTypes.StringType) {
+                    UTF8String v = row.getUTF8String(fieldIdx);
+                    byte[] bytes = v.getBytes();
+                    col.appendByteArray(bytes, 0, bytes.length);
+                } else {
+                    System.out.println("Muthu: INVALID DTYPE");
+                }
+            }
+        }
+    }
+
+    public boolean mergeBatch() {
+        try {
+            int pKeyOrdinal =
+                    requestedSchema.getFieldIndex(FileScanRDD.pKeyName());
+            Iterator<InternalRow> iter = columnarBatch.rowIterator();
+            int rowIdx = 0;
+            while (iter.hasNext()) {
+                InternalRow currRow = iter.next();
+                DataType pKeyDataType = columnVectors[pKeyOrdinal].dataType();
+                Object pKey =
+                        getPrimaryKeyValue(currRow, pKeyDataType, pKeyOrdinal);
+                if (!FileScanRDD.set().contains(pKey)) {
+                    includeRow(currRow);
+                    rowIdx++;
+                }
+            }
+            columnarBatch2.setNumRows(rowIdx);
+            if (rowIdx > 0) {
+                return true;
+            }
+        } catch (InvalidRecordException e) {
       System.out.println("Muthu: PRIMARY KEY COLUMN NOT FOUND");
     }
+        return false;
   }
 
   /**
    * Advances to the next batch of rows. Returns false if there are no more.
    */
   public boolean nextBatch() throws IOException {
-    for (WritableColumnVector vector : columnVectors) {
-      vector.reset();
-    }
-    columnarBatch.setNumRows(0);
-    if (rowsReturned >= totalRowCount) return false;
-    checkEndOfRowGroup();
+      for (int i = 0; i < columnVectors.length; ++i) {
+          columnVectors[i].reset();
+          columnVectors2[i].reset();
+      }
+      columnarBatch.setNumRows(0);
+      if (rowsReturned >= totalRowCount) {
+          return false;
+      }
+      checkEndOfRowGroup();
 
-    int num = (int) Math.min((long) capacity, totalCountLoadedSoFar - rowsReturned);
-    for (int i = 0; i < columnReaders.length; ++i) {
-      if (columnReaders[i] == null) continue;
-      columnReaders[i].readBatch(num, columnVectors[i]);
-    }
+      int num = (int) Math.min((long) capacity,
+              totalCountLoadedSoFar - rowsReturned);
+      for (int i = 0; i < columnReaders.length; ++i) {
+          if (columnReaders[i] == null) {
+              continue;
+          }
+          columnReaders[i].readBatch(num, columnVectors[i]);
+      }
     rowsReturned += num;
     columnarBatch.setNumRows(num);
     numBatched = num;
     batchIdx = 0;
-    mergeBatch();
-    return true;
+      return mergeBatch();
   }
 
   private void initializeInternal() throws IOException, UnsupportedOperationException {

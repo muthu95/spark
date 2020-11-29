@@ -21,8 +21,7 @@ import java.io.{FileNotFoundException, IOException}
 
 import collection.JavaConverters._
 import org.apache.parquet.io.ParquetDecodingException
-
-import org.apache.spark.{Partition => RDDPartition, SparkUpgradeException, TaskContext}
+import org.apache.spark.{SparkUpgradeException, TaskContext, Partition => RDDPartition}
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.rdd.{InputFileBlockHolder, RDD}
 import org.apache.spark.sql.SparkSession
@@ -31,15 +30,17 @@ import org.apache.spark.sql.execution.QueryExecutionException
 import org.apache.spark.sql.vectorized.ColumnarBatch
 import org.apache.spark.util.NextIterator
 
+import scala.collection.immutable.HashSet
+
 /**
  * A part (i.e. "block") of a single file that should be read, along with partition column values
  * that need to be prepended to each row.
  *
  * @param partitionValues value of partition columns to be prepended to each row.
- * @param filePath URI of the file to read
- * @param start the beginning offset (in bytes) of the block.
- * @param length number of bytes to read.
- * @param locations locality information (list of nodes that have the data).
+ * @param filePath        URI of the file to read
+ * @param start           the beginning offset (in bytes) of the block.
+ * @param length          number of bytes to read.
+ * @param locations       locality information (list of nodes that have the data).
  */
 case class PartitionedFile(
     partitionValues: InternalRow,
@@ -229,14 +230,7 @@ object FileScanRDD {
           "StringColumn" -> "Naga".asInstanceOf[Any]).asJava
   ).asJava */
 
-  val dict = Map(
-    "Robert ".asInstanceOf[Any] ->
-      Map("lastname" -> "ABC".asInstanceOf[Any],
-        "salary" -> 1234.asInstanceOf[Any]).asJava,
-    "Michael ".asInstanceOf[Any] ->
-      Map("middlename" -> "Jack".asInstanceOf[Any]).asJava,
-    "Jen".asInstanceOf[Any] ->
-      Map("salary" -> 100.asInstanceOf[Any],
-        "dob" -> "14195".asInstanceOf[Any]).asJava
+  val set = HashSet(
+    "Robert ".asInstanceOf[Any], "Michael ".asInstanceOf[Any]
   ).asJava
 }
