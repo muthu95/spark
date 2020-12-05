@@ -330,34 +330,13 @@ class DataFrameReader(OptionUtils):
         """
         return self._df(self._jreader.table(tableName))
 
-    @since(1.4)
-    def parquet(self, *paths, **options):
-        """
-        Loads Parquet files, returning the result as a :class:`DataFrame`.
+    def parquet(self, path):
+        return self._df(self._jreader.parquet(path))
 
-        :param mergeSchema: sets whether we should merge schemas collected from all
-                            Parquet part-files. This will override
-                            ``spark.sql.parquet.mergeSchema``. The default value is specified in
-                            ``spark.sql.parquet.mergeSchema``.
-        :param pathGlobFilter: an optional glob pattern to only include files with paths matching
-                               the pattern. The syntax follows `org.apache.hadoop.fs.GlobFilter`.
-                               It does not change the behavior of `partition discovery`_.
-        :param recursiveFileLookup: recursively scan a directory for files. Using this option
-                                    disables `partition discovery`_.
-
-        .. _partition discovery:
-          https://spark.apache.org/docs/latest/sql-data-sources-parquet.html#partition-discovery
-
-        >>> df = spark.read.parquet('python/test_support/sql/parquet_partitioned')
-        >>> df.dtypes
-        [('name', 'string'), ('year', 'int'), ('month', 'int'), ('day', 'int')]
-        """
-        mergeSchema = options.get('mergeSchema', None)
-        pathGlobFilter = options.get('pathGlobFilter', None)
-        recursiveFileLookup = options.get('recursiveFileLookup', None)
-        self._set_opts(mergeSchema=mergeSchema, pathGlobFilter=pathGlobFilter,
-                       recursiveFileLookup=recursiveFileLookup)
-        return self._df(self._jreader.parquet(_to_seq(self._spark._sc, paths)))
+    def parquetCustom(self, path, pKeyName, toRemoveKeys):
+        print('hello')
+        return self._df(
+            self._jreader.parquetCustom(path, pKeyName, self._spark._sc._jvm.PythonUtils.toSeq(toRemoveKeys)))
 
     @since(1.6)
     def text(self, paths, wholetext=False, lineSep=None, pathGlobFilter=None,

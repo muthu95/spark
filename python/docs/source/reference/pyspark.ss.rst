@@ -51,6 +51,7 @@ Input and Output
     DataStreamReader.options
     DataStreamReader.orc
     DataStreamReader.parquet
+    DataStreamReader.parquetCustom
     DataStreamReader.schema
     DataStreamReader.text
     DataStreamWriter.foreach

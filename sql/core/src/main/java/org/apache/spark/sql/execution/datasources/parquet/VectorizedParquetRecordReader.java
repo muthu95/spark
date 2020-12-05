@@ -22,7 +22,6 @@ import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -31,9 +30,10 @@ import org.apache.parquet.column.page.PageReadStore;
 import org.apache.parquet.io.InvalidRecordException;
 import org.apache.parquet.schema.Type;
 
+import org.apache.spark.sql.RemoveData;
 import org.apache.spark.memory.MemoryMode;
+import org.apache.spark.sql.TableInfo;
 import org.apache.spark.sql.catalyst.InternalRow;
-import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.execution.vectorized.ColumnVectorUtils;
 import org.apache.spark.sql.types.DataType;
 import org.apache.spark.sql.types.DataTypes;
@@ -388,18 +388,27 @@ public class VectorizedParquetRecordReader extends SpecificParquetRecordReaderBa
 
     public boolean mergeBatch() {
         try {
-            int pKeyOrdinal =
-                    requestedSchema.getFieldIndex(FileScanRDD.pKeyName());
+            String pathKey = RemoveData.extractPathKey(file.toString());
+            TableInfo tableInfo = RemoveData.removeMap.get(pathKey);
+            int pKeyOrdinal = (tableInfo == null) ? -1 :
+                    requestedSchema.getFieldIndex(tableInfo.pKeyName);
             Iterator<InternalRow> iter = columnarBatch.rowIterator();
             int rowIdx = 0;
             while (iter.hasNext()) {
                 InternalRow currRow = iter.next();
-                DataType pKeyDataType = columnVectors[pKeyOrdinal].dataType();
-                Object pKey =
-                        getPrimaryKeyValue(currRow, pKeyDataType, pKeyOrdinal);
-                if (!FileScanRDD.set().contains(pKey)) {
+                if (pKeyOrdinal == -1) {
                     includeRow(currRow);
                     rowIdx++;
+                } else {
+                    DataType pKeyDataType =
+                            columnVectors[pKeyOrdinal].dataType();
+                    Object pKey =
+                            getPrimaryKeyValue(currRow, pKeyDataType,
+                                    pKeyOrdinal);
+                    if (!tableInfo.set.contains(pKey)) {
+                        includeRow(currRow);
+                        rowIdx++;
+                    }
                 }
             }
             columnarBatch2.setNumRows(rowIdx);
@@ -407,10 +416,10 @@ public class VectorizedParquetRecordReader extends SpecificParquetRecordReaderBa
                 return true;
             }
         } catch (InvalidRecordException e) {
-      System.out.println("Muthu: PRIMARY KEY COLUMN NOT FOUND");
-    }
+            System.out.println("Muthu: PRIMARY KEY COLUMN NOT FOUND");
+        }
         return false;
-  }
+    }
 
   /**
    * Advances to the next batch of rows. Returns false if there are no more.

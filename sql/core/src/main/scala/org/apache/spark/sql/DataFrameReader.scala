@@ -20,9 +20,7 @@ package org.apache.spark.sql
 import java.util.{Locale, Properties}
 
 import scala.collection.JavaConverters._
-
 import com.fasterxml.jackson.databind.ObjectMapper
-
 import org.apache.spark.Partition
 import org.apache.spark.annotation.Stable
 import org.apache.spark.api.java.JavaRDD
@@ -31,7 +29,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.csv.{CSVHeaderChecker, CSVOptions, UnivocityParser}
 import org.apache.spark.sql.catalyst.expressions.ExprUtils
-import org.apache.spark.sql.catalyst.json.{CreateJacksonParser, JacksonParser, JSONOptions}
+import org.apache.spark.sql.catalyst.json.{CreateJacksonParser, JSONOptions, JacksonParser}
 import org.apache.spark.sql.catalyst.util.{CaseInsensitiveMap, FailureSafeParser}
 import org.apache.spark.sql.connector.catalog.{CatalogV2Util, SupportsCatalogOptions, SupportsRead}
 import org.apache.spark.sql.connector.catalog.TableCapability._
@@ -45,6 +43,8 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.unsafe.types.UTF8String
+
+import scala.collection.mutable.{ArrayBuffer, HashSet}
 
 /**
  * Interface used to load a [[Dataset]] from external storage systems (e.g. file systems,
@@ -766,6 +766,23 @@ class DataFrameReader private[sql](sparkSession: SparkSession) extends Logging {
    * @since 2.0.0
    */
   def parquet(path: String): DataFrame = {
+    // This method ensures that calls that explicit need single argument works, see SPARK-16009
+    parquet(Seq(path): _*)
+  }
+
+  /**
+   * Loads a Parquet file, returning the result as a `DataFrame`. See the documentation
+   * on the other overloaded `parquet()` method for more details.
+   *
+   * @since 2.0.0
+   */
+  def parquetCustom(path: String, pKeyName: String, toRemoveKeys: Seq[Any]): DataFrame = {
+    val pathKey: String = RemoveData.extractPathKey(path)
+    val scalaSet: HashSet[Any] = new HashSet[Any]
+    toRemoveKeys.foreach(x => scalaSet.add(x))
+    val tableInfo: TableInfo = new TableInfo(pKeyName,
+      scalaSet.asInstanceOf[HashSet[AnyRef]].asJava)
+    RemoveData.removeMap.put(pathKey, tableInfo)
     // This method ensures that calls that explicit need single argument works, see SPARK-16009
     parquet(Seq(path): _*)
   }

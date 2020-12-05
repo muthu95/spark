@@ -59,27 +59,37 @@ class DataFrameReader(OptionUtils):
         columnNameOfCorruptRecord: Optional[str] = ...,
         dateFormat: Optional[str] = ...,
         timestampFormat: Optional[str] = ...,
-        multiLine: Optional[Union[bool, str]] = ...,
-        allowUnquotedControlChars: Optional[Union[bool, str]] = ...,
-        lineSep: Optional[str] = ...,
-        samplingRatio: Optional[Union[float, str]] = ...,
-        dropFieldIfAllNull: Optional[Union[bool, str]] = ...,
-        encoding: Optional[str] = ...,
-        locale: Optional[str] = ...,
-        recursiveFileLookup: Optional[bool] = ...,
+            multiLine: Optional[Union[bool, str]] = ...,
+            allowUnquotedControlChars: Optional[Union[bool, str]] = ...,
+            lineSep: Optional[str] = ...,
+            samplingRatio: Optional[Union[float, str]] = ...,
+            dropFieldIfAllNull: Optional[Union[bool, str]] = ...,
+            encoding: Optional[str] = ...,
+            locale: Optional[str] = ...,
+            recursiveFileLookup: Optional[bool] = ...,
     ) -> DataFrame: ...
+
     def table(self, tableName: str) -> DataFrame: ...
-    def parquet(self, *paths: str, **options: OptionalPrimitiveType) -> DataFrame: ...
+
+    def parquet(self, path: str) -> DataFrame: ...
+
+    def parquetCustom(
+            self,
+            path: str,
+            pKeyName: str,
+            toRemoveKeys: List) -> DataFrame: ...
+
     def text(
-        self,
-        paths: PathOrPaths,
-        wholetext: bool = ...,
-        lineSep: Optional[str] = ...,
-        recursiveFileLookup: Optional[bool] = ...,
+            self,
+            paths: PathOrPaths,
+            wholetext: bool = ...,
+            lineSep: Optional[str] = ...,
+            recursiveFileLookup: Optional[bool] = ...,
     ) -> DataFrame: ...
+
     def csv(
-        self,
-        path: PathOrPaths,
+            self,
+            path: PathOrPaths,
         schema: Optional[Union[StructType, str]] = ...,
         sep: Optional[str] = ...,
         encoding: Optional[str] = ...,

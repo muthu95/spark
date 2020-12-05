@@ -65,8 +65,6 @@ class FileScanRDD(
   private val ignoreCorruptFiles = sparkSession.sessionState.conf.ignoreCorruptFiles
   private val ignoreMissingFiles = sparkSession.sessionState.conf.ignoreMissingFiles
 
-  private val muthuNagappan = "My name is Muthu"
-
   override def compute(split: RDDPartition, context: TaskContext): Iterator[InternalRow] = {
     val iterator = new Iterator[Object] with AutoCloseable {
       private val inputMetrics = context.taskMetrics().inputMetrics
@@ -216,21 +214,4 @@ class FileScanRDD(
   override protected def getPreferredLocations(split: RDDPartition): Seq[String] = {
     split.asInstanceOf[FilePartition].preferredLocations()
   }
-}
-
-object FileScanRDD {
-  val pKeyName = "firstname"
-
-  /* val dict = Map(
-    1045.asInstanceOf[Any] ->
-      Map("FloatColumn" -> 1.27F.asInstanceOf[Any],
-          "DoubleColumn" -> 5.79.asInstanceOf[Any],
-          "LongColumn" -> 5764L.asInstanceOf[Any],
-          "BoolColumn" -> false.asInstanceOf[Any],
-          "StringColumn" -> "Naga".asInstanceOf[Any]).asJava
-  ).asJava */
-
-  val set = HashSet(
-    "Robert ".asInstanceOf[Any], "Michael ".asInstanceOf[Any]
-  ).asJava
 }
